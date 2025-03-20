@@ -1,6 +1,159 @@
-// Linguagem de Programação C - 3ºSemestre 2025
-// Avaliação Formativa 1
+/* Universidade Municipal de São Caeatno do Sul */
+// Alisson Souza Torres Ribeiro - Linguagem de Programação C - 3ºSemestre 2025
+/* 424-03AM - Algoritmos e Estruturas de Dados III  Professor Bruno Monserrat Perillo */
 
-Filtro de Mediana e Arquivo PGM
-Relatório sobre o Visualizador de Imagens PGM com Filtro da Mediana
+// Avaliação Formativa 1 - Algoritmos e Estruturas de Dados III
 
+/* Filtro de Mediana e Arquivo PGM - Relatório sobre o Visualizador de Imagens PGM com Filtro da Mediana */
+
+/* 
+O código realiza a leitura de um arquivo PGM nos formatos P2 (ASCII) ou P5 (Binário) e o exibe no terminal utilizando 
+caracteres ASCII que representam diferentes tons de cinza. O programa segue os seguintes passos:
+Leitura do Cabeçalho:
+Verifica se o formato é P2 ou P5.
+Obtém as dimensões da imagem e o valor máximo de tons de cinza.
+Leitura dos Pixels:
+Armazena os valores da imagem em um vetor dinâmico.
+Aplicar o Filtro da Mediana:
+Para cada pixel da imagem, obtém-se uma vizinhança de 3x3 pixels.
+Os valores são ordenados e o valor mediano é atribuído ao pixel central.
+Exibição da Imagem:
+A imagem filtrada é reduzida para se ajustar à dimensão da tela.
+Utiliza caracteres ASCII para representar os tons de cinza.
+
+Emprego do Programa Este programa pode ser utilizado para a visualização rápida de imagens em formato PGM, principalmente em sistemas embarcados ou terminais sem suporte gráfico. 
+A aplicação do filtro da mediana é útil para melhorar a qualidade da imagem, removendo ruídos sem comprometer os detalhes.
+
+Exemplo Prático de Uso Para compilar o programa, utilize o seguinte comando no terminal:
+gcc pgm_viewer.c -o pgm_viewer
+Em seguida, execute o programa passando o nome do arquivo PGM como argumento:
+./pgm_viewer imagem.pgm
+Se a imagem original possuir ruídos, o filtro da mediana ajudará a suavizar a exibição. Este processo é especialmente útil para imagens escaneadas ou com imperfeições.
+
+Conclusão: O programa desenvolvido oferece uma solução eficiente para a visualização de imagens PGM diretamente no terminal. 
+A adição do filtro da mediana aprimora a qualidade da imagem, tornando-a mais adequada para análises visuais e reduzindo interferências causadas por ruídos digitais.
+*/
+
+(Código C Completo);
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#define WIDTH 80   // Largura de exibição no terminal
+#define HEIGHT 40  // Altura de exibição no terminal
+#define KERNEL_SIZE 3 // Tamanho do kernel para filtro da mediana
+
+// Mapeia tons de cinza para caracteres ASCII
+char gray_to_ascii(int gray, int max_gray) {
+    const char *ascii_chars = "@%#*+=-:. ";
+    int index = (gray * 9) / max_gray; // Normaliza para a escala de 9 tons
+    return ascii_chars[9 - index];
+}
+
+// Função de comparação para ordenação
+int compare(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
+
+// Aplica o filtro da mediana
+void apply_median_filter(int *image, int width, int height) {
+    int *filtered_image = malloc(width * height * sizeof(int));
+    if (!filtered_image) {
+        perror("Erro ao alocar memória");
+        return;
+    }
+    
+    int offset = KERNEL_SIZE / 2;
+    for (int y = offset; y < height - offset; y++) {
+        for (int x = offset; x < width - offset; x++) {
+            int window[KERNEL_SIZE * KERNEL_SIZE];
+            int count = 0;
+            
+            for (int ky = -offset; ky <= offset; ky++) {
+                for (int kx = -offset; kx <= offset; kx++) {
+                    window[count++] = image[(y + ky) * width + (x + kx)];
+                }
+            }
+            
+            qsort(window, KERNEL_SIZE * KERNEL_SIZE, sizeof(int), compare);
+            filtered_image[y * width + x] = window[KERNEL_SIZE * KERNEL_SIZE / 2];
+        }
+    }
+    
+    for (int i = 0; i < width * height; i++) {
+        image[i] = filtered_image[i];
+    }
+    
+    free(filtered_image);
+}
+
+void display_pgm(const char *filename) {
+    FILE *file = fopen(filename, "rb");
+    if (!file) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    char type[3];
+    int width, height, max_gray;
+
+    // Lê o cabeçalho do arquivo PGM
+    fscanf(file, "%2s", type);
+    if (type[0] != 'P' || (type[1] != '2' && type[1] != '5')) {
+        printf("Formato não suportado! Apenas P2 e P5 são aceitos.\n");
+        fclose(file);
+        return;
+    }
+
+    fscanf(file, "%d %d", &width, &height);
+    fscanf(file, "%d", &max_gray);
+    fgetc(file); // Consome o caractere de nova linha após o max_gray
+
+    int *image = malloc(width * height * sizeof(int));
+    if (!image) {
+        perror("Erro ao alocar memória");
+        fclose(file);
+        return;
+    }
+
+    // Lê os dados da imagem
+    for (int i = 0; i < width * height; i++) {
+        if (type[1] == '2') {
+            fscanf(file, "%d", &image[i]); // Formato ASCII (P2)
+        } else {
+            image[i] = fgetc(file); // Formato binário (P5)
+        }
+    }
+    fclose(file);
+
+    // Aplica o filtro da mediana
+    apply_median_filter(image, width, height);
+
+    // Ajusta proporção da exibição
+    int scale_x = width / WIDTH;
+    int scale_y = height / HEIGHT;
+    if (scale_x == 0) scale_x = 1;
+    if (scale_y == 0) scale_y = 1;
+
+    printf("Visualizando %s com filtro da mediana: %dx%d\n", filename, width, height);
+
+    // Exibe a imagem processada
+    for (int y = 0; y < height; y += scale_y) {
+        for (int x = 0; x < width; x += scale_x) {
+            if (x % scale_x == 0 && y % scale_y == 0) {
+                putchar(gray_to_ascii(image[y * width + x], max_gray));
+            }
+        }
+        putchar('\n');
+    }
+    free(image);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Uso: %s <arquivo.pgm>\n", argv[0]);
+        return 1;
+    }
+    display_pgm(argv[1]);
+    return 0;
+}
