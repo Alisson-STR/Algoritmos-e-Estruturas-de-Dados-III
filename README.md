@@ -55,23 +55,23 @@ from PIL import Image
 import numpy as np
 from scipy.ndimage import median_filter
 
-# Função para carregar a imagem PGM
+#Função para carregar a imagem PGM
 def carregar_imagem_pgm(caminho):
     return Image.open(caminho)
 
-# Função para aplicar o filtro de mediana
+#Função para aplicar o filtro de mediana
 def aplicar_filtro_median(imagem, tamanho_da_janela):
     img_array = np.array(imagem)
     imagem_filtrada = median_filter(img_array, size=tamanho_da_janela)
     return Image.fromarray(imagem_filtrada)
 
-# Carregar a imagem
+#Carregar a imagem
 imagem = carregar_imagem_pgm("imagem.pgm")
 
-# Aplicar filtro de mediana (tamanho da janela 3x3)
+#Aplicar filtro de mediana (tamanho da janela 3x3)
 imagem_filtrada = aplicar_filtro_median(imagem, 3)
 
-# Exibir a imagem original e a filtrada
+#Exibir a imagem original e a filtrada
 imagem.show()
 imagem_filtrada.show()
 
